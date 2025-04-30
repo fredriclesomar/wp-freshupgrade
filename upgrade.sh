@@ -75,7 +75,7 @@ if command -v wp &> /dev/null; then
         wp plugin update --all --path="$wp_path"
     done
 else
-    echo "⚠️ WP-CLI tidak ditemukan. Plugin tidak diperbarui."
+    echo "⚠️ WP-CLI tidak ditemukan. Plugin tidak diperbarui, mohon diproses manual."
 fi
 
 #rm -rf "$TMP_DIR"
