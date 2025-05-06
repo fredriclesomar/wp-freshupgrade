@@ -1,5 +1,5 @@
 # Fresh upgrade WordPress, build with Bahasa.
-sent any bug to hi@fredriclesomar.my.id
+The fresh upgrade process of WordPress will run automatically. Please ensure that you have created a backup as a precaution. By default, your media files will remain safe. Sent any bug to hi@fredriclesomar.my.id
 
 1. Shell command, first need to access grant:
 > chmod +x upgrade.sh
