@@ -43,14 +43,7 @@ if [ ! -f "$ZIP_FILE" ]; then
     exit 1
 fi
 
-echo "[3] Mengekstrak WordPress..."
-unzip -q "$ZIP_FILE" -d "$TMP_DIR"
-if [ ! -d "$EXTRACT_DIR" ]; then
-    echo "❌ Folder 'wordpress' tidak ditemukan setelah ekstrak."
-    exit 1
-fi
-
-echo "[3.5] Reset permission file dan folder (kecuali folder 0750)..."
+echo "[3] Reset permission file dan folder..."
 for wp_path in "${WP_PATHS[@]}"; do
     echo "→ Reset permission di: $wp_path"
 
@@ -64,7 +57,45 @@ for wp_path in "${WP_PATHS[@]}"; do
     done
 done
 
-echo "[4] Memperbarui instalasi WordPress..."
+echo "[3.1] Menghapus core WordPress lama..."
+FILES_TO_DELETE=(
+    "index.php" "wp-activate.php" "wp-blog-header.php" "wp-comments-post.php"
+    "wp-cron.php" "wp-links-opml.php" "wp-load.php" "wp-login.php"
+    "wp-mail.php" "wp-settings.php" "wp-signup.php" "wp-trackback.php" "xmlrpc.php"
+)
+
+FOLDERS_TO_DELETE=(
+    "wp-admin" "wp-includes"
+)
+
+for wp_path in "${WP_PATHS[@]}"; do
+    echo "→ Membersihkan di: $wp_path"
+
+    for file in "${FILES_TO_DELETE[@]}"; do
+        if [ -f "$wp_path/$file" ]; then
+            rm -f "$wp_path/$file"
+            echo "   ↳ Hapus file: $file"
+        fi
+    done
+
+    for folder in "${FOLDERS_TO_DELETE[@]}"; do
+        if [ -d "$wp_path/$folder" ]; then
+            rm -rf "$wp_path/$folder"
+            echo "   ↳ Hapus folder: $folder"
+        fi
+    done
+done
+
+
+echo "[4] Mengekstrak WordPress..."
+unzip -q "$ZIP_FILE" -d "$TMP_DIR"
+if [ ! -d "$EXTRACT_DIR" ]; then
+    echo "❌ Folder 'wordpress' tidak ditemukan setelah ekstrak."
+    exit 1
+fi
+
+
+echo "[4.1] Memperbarui instalasi WordPress..."
 for wp_path in "${WP_PATHS[@]}"; do
     echo "→ Memproses: $wp_path"
 
@@ -139,6 +170,6 @@ for wp_path in "${WP_PATHS[@]}"; do
 done
 
 
-#rm -rf "$TMP_DIR"
+rm -rf "$TMP_DIR"
 
 echo "✅ Selesai. Semua WordPress telah diperbarui."
