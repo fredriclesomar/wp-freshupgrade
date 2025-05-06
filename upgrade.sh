@@ -105,7 +105,7 @@ for wp_path in "${WP_PATHS[@]}"; do
 
     for plugin_folder in "$PLUGIN_DIR"/*/; do
         plugin_name=$(basename "$plugin_folder")
-        echo "   ↳ Memproses plugin: $plugin_name"
+        echo "   ↳ Perbarui plugin: $plugin_name"
 
         PLUGIN_PAGE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://wordpress.org/plugins/${plugin_name}/")
         if [ "$PLUGIN_PAGE_STATUS" != "200" ]; then
