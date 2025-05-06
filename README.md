@@ -1,4 +1,4 @@
-# Fresh upgrade build with Bahasa
+# Fresh upgrade WordPress, build with Bahasa.
 sent any bug to hi@fredriclesomar.my.id
 
 1. Shell command, first need to access grant:
