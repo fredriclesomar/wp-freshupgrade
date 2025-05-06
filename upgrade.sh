@@ -140,8 +140,8 @@ for wp_path in "${WP_PATHS[@]}"; do
 
         PLUGIN_PAGE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://wordpress.org/plugins/${plugin_name}/")
         if [ "$PLUGIN_PAGE_STATUS" != "200" ]; then
-            echo "     ❌ Tidak ada plugin '$plugin_name' di situs resmi."
-            echo "     ⚠️ Plugin '$plugin_name' belum diperbarui."
+            echo "❌ Tidak ada plugin '$plugin_name' di situs resmi."
+            echo "⚠️ Plugin '$plugin_name' belum diperbarui."
             continue
         fi
 
@@ -151,7 +151,7 @@ for wp_path in "${WP_PATHS[@]}"; do
         wget -q -O "$PLUGIN_ZIP_PATH" "$PLUGIN_ZIP_URL"
 
         if [ ! -f "$PLUGIN_ZIP_PATH" ]; then
-            echo "     ⚠️ Gagal mengunduh plugin: $plugin_name"
+            echo "⚠️ Gagal mengunduh plugin: $plugin_name"
             continue
         fi
 
@@ -160,9 +160,9 @@ for wp_path in "${WP_PATHS[@]}"; do
         if [ -d "$TMP_DIR/$plugin_name" ]; then
             rm -rf "$PLUGIN_DIR/$plugin_name"
             mv "$TMP_DIR/$plugin_name" "$PLUGIN_DIR/"
-            echo "     ✔ Plugin '$plugin_name' berhasil diperbarui."
+            echo "✔ Plugin '$plugin_name' berhasil diperbarui."
         else
-            echo "     ⚠️ Struktur plugin tidak valid: $plugin_name"
+            echo "⚠️ Struktur plugin tidak valid: $plugin_name"
         fi
 
         rm -f "$PLUGIN_ZIP_PATH"
@@ -186,8 +186,8 @@ for wp_path in "${WP_PATHS[@]}"; do
 
         THEME_PAGE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://wordpress.org/themes/${theme_name}/")
         if [ "$THEME_PAGE_STATUS" != "200" ]; then
-            echo "     ❌ Tidak ada theme '$theme_name' di situs resmi."
-            echo "     ⚠️ Theme '$theme_name' belum diperbarui."
+            echo "❌ Tidak ada theme '$theme_name' di situs resmi."
+            echo "⚠️ Theme '$theme_name' belum diperbarui."
             continue
         fi
 
@@ -197,7 +197,7 @@ for wp_path in "${WP_PATHS[@]}"; do
         wget -q -O "$THEME_ZIP_PATH" "$THEME_ZIP_URL"
 
         if [ ! -f "$THEME_ZIP_PATH" ]; then
-            echo "     ⚠️ Gagal mengunduh theme: $theme_name"
+            echo "⚠️ Gagal mengunduh theme: $theme_name"
             continue
         fi
 
@@ -206,9 +206,9 @@ for wp_path in "${WP_PATHS[@]}"; do
         if [ -d "$TMP_DIR/$theme_name" ]; then
             rm -rf "$THEME_DIR/$theme_name"
             mv "$TMP_DIR/$theme_name" "$THEME_DIR/"
-            echo "     ✔ Theme '$theme_name' berhasil diperbarui."
+            echo "✔ Theme '$theme_name' berhasil diperbarui."
         else
-            echo "     ⚠️ Struktur theme tidak valid: $theme_name"
+            echo "⚠️ Struktur theme tidak valid: $theme_name"
         fi
 
         rm -f "$THEME_ZIP_PATH"
