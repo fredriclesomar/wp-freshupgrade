@@ -3,7 +3,8 @@ sent any bug to hi@fredriclesomar.my.id
 
 1. Shell command, first need to access grant:
 > chmod +x upgrade.sh
-
+2. Exec the shell:
+> # ./upgrade.sh -u usercPanel
 2. Make sure, your clone this repo or create manualy from unix editor.
 3. Solution, if you find some error like this: bash: ./upgrade.sh: /bin/bash^M: bad interpreter: No such file or directory
 > sed -i 's/\r//' upgrade.sh
