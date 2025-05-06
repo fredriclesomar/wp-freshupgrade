@@ -2,7 +2,7 @@
 
 BASE_DIR="/home/usercpanel/public_html"
 WP_URL="https://wordpress.org/latest.zip"
-TMP_DIR="/home/kare3343/tmp_wp"
+TMP_DIR="/home/usercpanel/tmp_wp"
 ZIP_FILE="$TMP_DIR/latest.zip"
 EXTRACT_DIR="$TMP_DIR/wordpress"
 
