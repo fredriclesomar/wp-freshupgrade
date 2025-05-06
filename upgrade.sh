@@ -169,7 +169,53 @@ for wp_path in "${WP_PATHS[@]}"; do
     done
 done
 
+echo "[6] Memperbarui theme secara manual dari wordpress.org..."
+
+for wp_path in "${WP_PATHS[@]}"; do
+    THEME_DIR="$wp_path/wp-content/themes"
+    echo "→ Memproses theme di: $THEME_DIR"
+
+    if [ ! -d "$THEME_DIR" ]; then
+        echo "⚠️ Folder theme tidak ditemukan: $THEME_DIR"
+        continue
+    fi
+
+    for theme_folder in "$THEME_DIR"/*/; do
+        theme_name=$(basename "$theme_folder")
+        echo "   ↳ Perbarui theme: $theme_name"
+
+        THEME_PAGE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://wordpress.org/themes/${theme_name}/")
+        if [ "$THEME_PAGE_STATUS" != "200" ]; then
+            echo "     ❌ Tidak ada theme '$theme_name' di situs resmi."
+            echo "     ⚠️ Theme '$theme_name' belum diperbarui."
+            continue
+        fi
+
+        THEME_ZIP_URL="https://downloads.wordpress.org/theme/${theme_name}.latest-stable.zip"
+        THEME_ZIP_PATH="$TMP_DIR/${theme_name}.zip"
+
+        wget -q -O "$THEME_ZIP_PATH" "$THEME_ZIP_URL"
+
+        if [ ! -f "$THEME_ZIP_PATH" ]; then
+            echo "     ⚠️ Gagal mengunduh theme: $theme_name"
+            continue
+        fi
+
+        unzip -q "$THEME_ZIP_PATH" -d "$TMP_DIR"
+
+        if [ -d "$TMP_DIR/$theme_name" ]; then
+            rm -rf "$THEME_DIR/$theme_name"
+            mv "$TMP_DIR/$theme_name" "$THEME_DIR/"
+            echo "     ✔ Theme '$theme_name' berhasil diperbarui."
+        else
+            echo "     ⚠️ Struktur theme tidak valid: $theme_name"
+        fi
+
+        rm -f "$THEME_ZIP_PATH"
+    done
+done
 
 rm -rf "$TMP_DIR"
 
 echo "✅ Selesai. Semua WordPress telah diperbarui."
+echo "⚠️ Silahkan periksa file malware/shell diluar struktur web dan segera hapus!"
