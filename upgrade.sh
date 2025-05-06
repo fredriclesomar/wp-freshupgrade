@@ -92,15 +92,52 @@ for wp_path in "${WP_PATHS[@]}"; do
     echo "✔ WordPress diperbarui di: $wp_path"
 done
 
-echo "[5] Memperbarui plugin (jika wp-cli tersedia)..."
-if command -v wp &> /dev/null; then
-    for wp_path in "${WP_PATHS[@]}"; do
-        echo "→ Update plugin di: $wp_path"
-        wp plugin update --all --path="$wp_path"
+echo "[5] Memperbarui plugin secara manual dari wordpress.org..."
+
+for wp_path in "${WP_PATHS[@]}"; do
+    PLUGIN_DIR="$wp_path/wp-content/plugins"
+    echo "→ Memproses plugin di: $PLUGIN_DIR"
+
+    if [ ! -d "$PLUGIN_DIR" ]; then
+        echo "⚠️ Folder plugin tidak ditemukan: $PLUGIN_DIR"
+        continue
+    fi
+
+    for plugin_folder in "$PLUGIN_DIR"/*/; do
+        plugin_name=$(basename "$plugin_folder")
+        echo "   ↳ Memproses plugin: $plugin_name"
+
+        PLUGIN_PAGE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://wordpress.org/plugins/${plugin_name}/")
+        if [ "$PLUGIN_PAGE_STATUS" != "200" ]; then
+            echo "     ❌ Tidak ada plugin '$plugin_name' di situs resmi."
+            echo "     ⚠️ Plugin '$plugin_name' belum diperbarui."
+            continue
+        fi
+
+        PLUGIN_ZIP_URL="https://downloads.wordpress.org/plugin/${plugin_name}.latest-stable.zip"
+        PLUGIN_ZIP_PATH="$TMP_DIR/${plugin_name}.zip"
+
+        wget -q -O "$PLUGIN_ZIP_PATH" "$PLUGIN_ZIP_URL"
+
+        if [ ! -f "$PLUGIN_ZIP_PATH" ]; then
+            echo "     ⚠️ Gagal mengunduh plugin: $plugin_name"
+            continue
+        fi
+
+        unzip -q "$PLUGIN_ZIP_PATH" -d "$TMP_DIR"
+
+        if [ -d "$TMP_DIR/$plugin_name" ]; then
+            rm -rf "$PLUGIN_DIR/$plugin_name"
+            mv "$TMP_DIR/$plugin_name" "$PLUGIN_DIR/"
+            echo "     ✔ Plugin '$plugin_name' berhasil diperbarui."
+        else
+            echo "     ⚠️ Struktur plugin tidak valid: $plugin_name"
+        fi
+
+        rm -f "$PLUGIN_ZIP_PATH"
     done
-else
-    echo "⚠️ WP-CLI tidak ditemukan. Plugin tidak diperbarui, mohon diproses manual."
-fi
+done
+
 
 #rm -rf "$TMP_DIR"
 
