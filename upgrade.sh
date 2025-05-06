@@ -50,8 +50,21 @@ if [ ! -d "$EXTRACT_DIR" ]; then
     exit 1
 fi
 
-echo "[4] Memperbarui instalasi WordPress..."
+echo "[3.5] Reset permission file dan folder (kecuali folder 0750)..."
+for wp_path in "${WP_PATHS[@]}"; do
+    echo "→ Reset permission di: $wp_path"
 
+    find "$wp_path" -type f -exec chmod 0644 {} \;
+
+    find "$wp_path" -type d | while read -r dir; do
+        current_perm=$(stat -c "%a" "$dir")
+        if [ "$current_perm" != "750" ]; then
+            chmod 0755 "$dir"
+        fi
+    done
+done
+
+echo "[4] Memperbarui instalasi WordPress..."
 for wp_path in "${WP_PATHS[@]}"; do
     echo "→ Memproses: $wp_path"
 
@@ -80,7 +93,6 @@ for wp_path in "${WP_PATHS[@]}"; do
 done
 
 echo "[5] Memperbarui plugin (jika wp-cli tersedia)..."
-
 if command -v wp &> /dev/null; then
     for wp_path in "${WP_PATHS[@]}"; do
         echo "→ Update plugin di: $wp_path"
@@ -93,4 +105,3 @@ fi
 #rm -rf "$TMP_DIR"
 
 echo "✅ Selesai. Semua WordPress telah diperbarui."
-
