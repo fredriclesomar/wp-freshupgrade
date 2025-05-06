@@ -218,4 +218,4 @@ done
 rm -rf "$TMP_DIR"
 
 echo "✅ Selesai. Semua WordPress telah diperbarui."
-echo "⚠️ Silahkan periksa file malware/shell diluar struktur web dan segera hapus!"
+echo "⚠️ Silahkan periksa file malware/backdoor diluar struktur web dan segera hapus!"
