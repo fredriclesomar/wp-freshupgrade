@@ -1,8 +1,20 @@
 #!/bin/bash
 
-BASE_DIR="/home/usercpanel/public_html"
+while getopts u: flag; do
+    case "${flag}" in
+        u) USERCPANEL=${OPTARG};;
+        *) echo "Usage: $0 -u usercpanel"; exit 1;;
+    esac
+done
+
+if [ -z "$USERCPANEL" ]; then
+    echo "❌ Username cPanel tidak diberikan."
+    echo "Usage: $0 -u usercpanel"
+    exit 1
+fi
+BASE_DIR="/home/${USERCPANEL}/public_html"
 WP_URL="https://wordpress.org/latest.zip"
-TMP_DIR="/home/usercpanel/tmp_wp"
+TMP_DIR="/home/${USERCPANEL}/tmp_wp"
 ZIP_FILE="$TMP_DIR/latest.zip"
 EXTRACT_DIR="$TMP_DIR/wordpress"
 
@@ -81,3 +93,4 @@ fi
 #rm -rf "$TMP_DIR"
 
 echo "✅ Selesai. Semua WordPress telah diperbarui."
+
