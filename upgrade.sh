@@ -217,5 +217,90 @@ done
 
 rm -rf "$TMP_DIR"
 
+
+echo "[7] Menampilkan user terdaftar dan opsi reset password..."
+
+for WP_PATH in "${WP_PATHS[@]}"; do
+    echo "→ Memproses instalasi di: $WP_PATH"
+    CONFIG_FILE="$WP_PATH/wp-config.php"
+
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "   ❌ wp-config.php tidak ditemukan di $WP_PATH"
+        continue
+    fi
+
+    DB_NAME=$(php -r "include('$CONFIG_FILE'); echo DB_NAME;" 2>/dev/null)
+    DB_USER=$(php -r "include('$CONFIG_FILE'); echo DB_USER;" 2>/dev/null)
+    DB_PASSWORD=$(php -r "include('$CONFIG_FILE'); echo DB_PASSWORD;" 2>/dev/null)
+    RAW_DB_HOST=$(php -r "include('$CONFIG_FILE'); echo DB_HOST;" 2>/dev/null)
+    DB_HOST=$(echo "$RAW_DB_HOST" | cut -d':' -f1)
+    DB_PORT=$(echo "$RAW_DB_HOST" | cut -s -d':' -f2)
+    TABLE_PREFIX=$(php -r "include('$CONFIG_FILE'); echo \$table_prefix;" 2>/dev/null)
+
+    if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_HOST" ] || [ -z "$TABLE_PREFIX" ]; then
+        echo "   ❌ Gagal membaca konfigurasi dari wp-config.php"
+        continue
+    fi
+
+    MYSQL_CMD=(mysql -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST")
+    if [ -n "$DB_PORT" ]; then
+        MYSQL_CMD+=(-P "$DB_PORT")
+    fi
+    MYSQL_CMD+=("$DB_NAME")
+
+    QUERY_USERS="SELECT ID, user_login FROM ${TABLE_PREFIX}users;"
+    USERS=($("${MYSQL_CMD[@]}" -N -e "$QUERY_USERS" 2>/dev/null))
+
+    if [ ${#USERS[@]} -eq 0 ]; then
+        echo "   ⚠️ Tidak ada user ditemukan di database."
+        continue
+    fi
+
+    echo "   📋 Daftar User WordPress:"
+    USER_IDS=()
+    USERNAMES=()
+    i=0
+    while [ $i -lt ${#USERS[@]} ]; do
+        ID="${USERS[$i]}"
+        USER="${USERS[$((i+1))]}"
+
+        ROLE_QUERY="SELECT meta_value FROM ${TABLE_PREFIX}usermeta WHERE user_id=$ID AND meta_key='${TABLE_PREFIX}capabilities';"
+        META_VALUE=$("${MYSQL_CMD[@]}" -N -e "$ROLE_QUERY" 2>/dev/null)
+        ROLE=$(echo "$META_VALUE" | sed -E 's/.*s:[0-9]+:"([^"]+)".*/\1/')
+
+        LABEL=$(echo "ABCDEFGHIJKLMNOPQRSTUVWXYZ" | cut -c$((i/2+1)))
+        echo "    [$LABEL] $USER | Role: $ROLE"
+
+        USER_IDS+=("$ID")
+        USERNAMES+=("$USER")
+        i=$((i + 2))
+    done
+
+    read -p "   ❓ Ingin mereset password salah satu user? (y/n): " jawab
+    if [[ "$jawab" =~ ^[Yy]$ ]]; then
+        read -p "   🔤 Pilih user [A-Z]: " pilihan
+        pilihan_upper=$(echo "$pilihan" | tr '[:lower:]' '[:upper:]')
+        idx=$(printf "%d" "'$pilihan_upper")
+        idx=$((idx - 65))
+
+        if [ $idx -ge 0 ] && [ $idx -lt ${#USER_IDS[@]} ]; then
+            selected_id=${USER_IDS[$idx]}
+            selected_user=${USERNAMES[$idx]}
+            new_pass=$(openssl rand -base64 12)
+            new_pass_md5=$(php -r "echo md5('$new_pass');")
+
+            UPDATE_QUERY="UPDATE ${TABLE_PREFIX}users SET user_pass='$new_pass_md5' WHERE ID=$selected_id;"
+            "${MYSQL_CMD[@]}" -e "$UPDATE_QUERY" 2>/dev/null
+
+            echo "   ✅ Password user '$selected_user' berhasil direset!"
+            echo "   🔐 Password baru: $new_pass"
+        else
+            echo "   ❌ Pilihan tidak valid."
+        fi
+    else
+        echo "   ⏩ Melewati reset password."
+    fi
+done
+
 echo "✅ Selesai. Semua WordPress telah diperbarui."
 echo "⚠️ Silahkan periksa file malware/backdoor diluar struktur web dan segera hapus!"
