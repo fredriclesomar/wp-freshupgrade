@@ -1,8 +1,6 @@
 #!/bin/bash
 
-#!/bin/bash
 
-# Tampilkan informasi kredit
 echo -e "\e[1;36m┌─────────────────────────────────────────────┐\e[0m"
 echo -e "\e[1;36m│      \e[1;33mWordPress Maintenance & Hardening\e[1;36m      │\e[0m"
 echo -e "\e[1;36m└─────────────────────────────────────────────┘\e[0m"
@@ -255,7 +253,6 @@ for WP_PATH in "${WP_PATHS[@]}"; do
         continue
     fi
 echo "======================================================="
-    # Pilihan reset password user
     echo "   Daftar user yang ada di database ($DB_NAME):"
     QUERY="SELECT ID, user_login, user_email, user_registered FROM ${TABLE_PREFIX}users;"
     USERS=$(mysql -N -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" -P "${DB_PORT:-3306}" -D "$DB_NAME" -e "$QUERY" 2>/dev/null)
@@ -284,7 +281,6 @@ echo "======================================================="
     SELECTED_USER_LOGIN=$(echo "$USERS" | sed -n "${USER_CHOICE}p" | awk '{print $2}')
     SELECTED_USER_ID=$(echo "$USERS" | sed -n "${USER_CHOICE}p" | awk '{print $1}')
 
-    # Generate password random dan hash WordPress dengan PHP
     NEW_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)
     HASHED_PASS=$(php -r "
         require_once('$WP_PATH/wp-load.php');
