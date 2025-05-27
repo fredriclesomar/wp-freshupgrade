@@ -287,9 +287,9 @@ for WP_PATH in "${WP_PATHS[@]}"; do
             selected_id=${USER_IDS[$idx]}
             selected_user=${USERNAMES[$idx]}
             new_pass=$(openssl rand -base64 12)
-            new_pass_md5=$(php -r "echo md5('$new_pass');")
+            hashed_pass=$(php -r "require_once('$wp_path/wp-load.php'); echo wp_hash_password('$new_pass');")
 
-            UPDATE_QUERY="UPDATE ${TABLE_PREFIX}users SET user_pass='$new_pass_md5' WHERE ID=$selected_id;"
+            UPDATE_QUERY="UPDATE ${TABLE_PREFIX}users SET user_pass='$hashed_pass' WHERE ID=$selected_id;"
             "${MYSQL_CMD[@]}" -e "$UPDATE_QUERY" 2>/dev/null
 
             echo "   ✅ Password user '$selected_user' berhasil direset!"
