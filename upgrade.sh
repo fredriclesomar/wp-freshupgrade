@@ -1,5 +1,17 @@
 #!/bin/bash
 
+#!/bin/bash
+
+# Tampilkan informasi kredit
+echo -e "\e[1;36m┌─────────────────────────────────────────────┐\e[0m"
+echo -e "\e[1;36m│      \e[1;33mWordPress Maintenance & Hardening\e[1;36m      │\e[0m"
+echo -e "\e[1;36m└─────────────────────────────────────────────┘\e[0m"
+echo -e "\e[1;32mAuthor :\e[0m Fredric Lesomar"
+echo -e "\e[1;32mEmail  :\e[0m hi@fredriclesomar.my.id"
+echo -e "\e[1;32mVersi  :\e[0m 2.4"
+echo
+
+
 while getopts u: flag; do
     case "${flag}" in
         u) USERCPANEL=${OPTARG};;
@@ -218,6 +230,7 @@ done
 rm -rf "$TMP_DIR"
 
 
+
 echo "[7] Menampilkan user terdaftar dan opsi reset password..."
 
 for WP_PATH in "${WP_PATHS[@]}"; do
@@ -238,69 +251,135 @@ for WP_PATH in "${WP_PATHS[@]}"; do
     TABLE_PREFIX=$(php -r "include('$CONFIG_FILE'); echo \$table_prefix;" 2>/dev/null)
 
     if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_HOST" ] || [ -z "$TABLE_PREFIX" ]; then
-        echo "   ❌ Gagal membaca konfigurasi dari wp-config.php"
+        echo "   ❌ Gagal membaca konfigurasi database."
+        continue
+    fi
+echo "======================================================="
+    # Pilihan reset password user
+    echo "   Daftar user yang ada di database ($DB_NAME):"
+    QUERY="SELECT ID, user_login, user_email, user_registered FROM ${TABLE_PREFIX}users;"
+    USERS=$(mysql -N -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" -P "${DB_PORT:-3306}" -D "$DB_NAME" -e "$QUERY" 2>/dev/null)
+
+    if [ -z "$USERS" ]; then
+        echo "   ❌ Gagal mendapatkan daftar user dari database."
         continue
     fi
 
-    MYSQL_CMD=(mysql -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST")
-    if [ -n "$DB_PORT" ]; then
-        MYSQL_CMD+=(-P "$DB_PORT")
-    fi
-    MYSQL_CMD+=("$DB_NAME")
+    echo "$USERS" | awk '{print NR". "$2" <"$3"> (Registered: "$4")"}'
 
-    QUERY_USERS="SELECT ID, user_login FROM ${TABLE_PREFIX}users;"
-    USERS=($("${MYSQL_CMD[@]}" -N -e "$QUERY_USERS" 2>/dev/null))
+    echo -n "   Masukkan nomor user yang ingin direset passwordnya (atau ketik 0 untuk lewati): "
+    read -r USER_CHOICE
 
-    if [ ${#USERS[@]} -eq 0 ]; then
-        echo "   ⚠️ Tidak ada user ditemukan di database."
+    if [[ ! "$USER_CHOICE" =~ ^[0-9]+$ ]] || [ "$USER_CHOICE" -lt 0 ] || [ "$USER_CHOICE" -gt "$(echo "$USERS" | wc -l)" ]; then
+        echo "   ❌ Pilihan tidak valid."
         continue
     fi
 
-    echo "   📋 Daftar User WordPress:"
-    USER_IDS=()
-    USERNAMES=()
-    i=0
-    while [ $i -lt ${#USERS[@]} ]; do
-        ID="${USERS[$i]}"
-        USER="${USERS[$((i+1))]}"
-
-        ROLE_QUERY="SELECT meta_value FROM ${TABLE_PREFIX}usermeta WHERE user_id=$ID AND meta_key='${TABLE_PREFIX}capabilities';"
-        META_VALUE=$("${MYSQL_CMD[@]}" -N -e "$ROLE_QUERY" 2>/dev/null)
-        ROLE=$(echo "$META_VALUE" | sed -E 's/.*s:[0-9]+:"([^"]+)".*/\1/')
-
-        LABEL=$(echo "ABCDEFGHIJKLMNOPQRSTUVWXYZ" | cut -c$((i/2+1)))
-        echo "    [$LABEL] $USER | Role: $ROLE"
-
-        USER_IDS+=("$ID")
-        USERNAMES+=("$USER")
-        i=$((i + 2))
-    done
-
-    read -p "   ❓ Ingin mereset password salah satu user? (y/n): " jawab
-    if [[ "$jawab" =~ ^[Yy]$ ]]; then
-        read -p "   🔤 Pilih user [A-Z]: " pilihan
-        pilihan_upper=$(echo "$pilihan" | tr '[:lower:]' '[:upper:]')
-        idx=$(printf "%d" "'$pilihan_upper")
-        idx=$((idx - 65))
-
-        if [ $idx -ge 0 ] && [ $idx -lt ${#USER_IDS[@]} ]; then
-            selected_id=${USER_IDS[$idx]}
-            selected_user=${USERNAMES[$idx]}
-            new_pass=$(openssl rand -base64 12)
-            hashed_pass=$(php -r "require_once('$wp_path/wp-load.php'); echo wp_hash_password('$new_pass');")
-
-            UPDATE_QUERY="UPDATE ${TABLE_PREFIX}users SET user_pass='$hashed_pass' WHERE ID=$selected_id;"
-            "${MYSQL_CMD[@]}" -e "$UPDATE_QUERY" 2>/dev/null
-
-            echo "   ✅ Password user '$selected_user' berhasil direset!"
-            echo "   🔐 Password baru: $new_pass"
-        else
-            echo "   ❌ Pilihan tidak valid."
-        fi
-    else
-        echo "   ⏩ Melewati reset password."
+    if [ "$USER_CHOICE" -eq 0 ]; then
+        echo "   → Lewati reset password."
+        continue
     fi
+
+
+    SELECTED_USER_LOGIN=$(echo "$USERS" | sed -n "${USER_CHOICE}p" | awk '{print $2}')
+    SELECTED_USER_ID=$(echo "$USERS" | sed -n "${USER_CHOICE}p" | awk '{print $1}')
+
+    # Generate password random dan hash WordPress dengan PHP
+    NEW_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)
+    HASHED_PASS=$(php -r "
+        require_once('$WP_PATH/wp-load.php');
+        echo wp_hash_password('$NEW_PASS');
+    ")
+
+    if [ -z "$HASHED_PASS" ]; then
+        echo "   ❌ Gagal menghasilkan hash password."
+        continue
+    fi
+
+    SQL_UPDATE="UPDATE ${TABLE_PREFIX}users SET user_pass='$HASHED_PASS' WHERE ID=$SELECTED_USER_ID;"
+    mysql -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" -P "${DB_PORT:-3306}" -D "$DB_NAME" -e "$SQL_UPDATE"
+
+    echo "   ✔ Password user '$SELECTED_USER_LOGIN' berhasil direset menjadi: $NEW_PASS"
+    
+    echo "======================================================="
 done
+
+echo "[8] Apakah ingin melanjutkan proses hardening WordPress?"
+read -p "   ❓ Lanjutkan proses hardening? (y/n): " harden_confirm
+
+if [[ "$harden_confirm" =~ ^[Yy]$ ]]; then
+    for wp_path in "${WP_PATHS[@]}"; do
+        echo "🔐 Memulai hardening untuk: $wp_path"
+        upload_dir="$wp_path/wp-content/uploads"
+        backup_dir="/home/${USERCPANEL}/uploads_backup"
+        htaccess_file="$upload_dir/.htaccess"
+
+        read -p "   [1] Backup folder uploads ke luar public_html? (y/n): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            mkdir -p "$backup_dir"
+            zip -rq "$backup_dir/uploads_backup.zip" "$upload_dir"
+            echo "   ✅ Backup selesai: $backup_dir/uploads_backup.zip"
+        fi
+
+        read -p "   [2] Tambahkan konfig blokir file .php di uploads? (y/n): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            echo -e "<FilesMatch \"\.(php|php5|phtml)$\">\nDeny from all\n</FilesMatch>" > "$htaccess_file"
+            echo "   ✅ .htaccess ditambahkan."
+        fi
+
+        read -p "   [3] Nonaktifkan tombol tambah plugin dan theme? (y/n): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            grep -q "DISALLOW_FILE_EDIT" "$wp_path/wp-config.php" || \
+            echo "define('DISALLOW_FILE_MODS', true);" >> "$wp_path/wp-config.php"
+            echo "   ✅ Konfigurasi ditambahkan."
+        fi
+
+        read -p "   [4] Tambahkan proteksi plugin dan theme editor? (y/n): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            grep -q "DISALLOW_FILE_EDIT" "$wp_path/wp-config.php" || \
+            echo "define('DISALLOW_FILE_EDIT', true);" >> "$wp_path/wp-config.php"
+            echo "   ✅ Konfigurasi ditambahkan."
+        fi
+
+        # 5. Ubah permission wp-config.php
+        read -p "   [5] Ubah permission wp-config.php ke 444? (y/n): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            chmod 444 "$wp_path/wp-config.php"
+            echo "   ✅ Permission diubah."
+        fi
+
+        read -p "   [6] Hapus plugin file manager jika ada? (y/n): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            rm -rf "$wp_path/wp-content/plugins/file-manager*"
+            echo "   ✅ Plugin file manager dihapus (jika ada)."
+        fi
+
+        read -p "   [7] Blokir akses xmlrpc.php? (y/n): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            htaccess_main="$wp_path/.htaccess"
+            if ! grep -q "xmlrpc.php" "$htaccess_main"; then
+                echo -e "\n<Files xmlrpc.php>\nOrder Allow,Deny\nDeny from all\n</Files>" >> "$htaccess_main"
+                echo "   ✅ Akses xmlrpc.php diblokir."
+            fi
+        fi
+
+        read -p "   [8] Hapus file PHP/HTML dalam uploads? (y/n): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            find "$upload_dir" -type f \( -iname "*.php*" -o -iname "*.htm*" \) -delete
+            echo "   ✅ File berbahaya dihapus."
+        fi
+
+        read -p "   [9] Tambahkan index.php di setiap folder uploads? (y/n): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            find "$upload_dir" -type d | while read -r folder; do
+                echo "<?php // Silence is golden ?>" > "$folder/index.php"
+            done
+            echo "   ✅ File index.php ditambahkan."
+        fi
+    done
+else
+    echo "⏩ Melewati proses hardening WordPress."
+fi
 
 echo "✅ Selesai. Semua WordPress telah diperbarui."
 echo "⚠️ Silahkan periksa file malware/backdoor diluar struktur web dan segera hapus!"
