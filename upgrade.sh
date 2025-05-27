@@ -227,8 +227,6 @@ done
 
 rm -rf "$TMP_DIR"
 
-
-
 echo "[7] Menampilkan user terdaftar dan opsi reset password..."
 
 for WP_PATH in "${WP_PATHS[@]}"; do
@@ -252,7 +250,7 @@ for WP_PATH in "${WP_PATHS[@]}"; do
         echo "   ❌ Gagal membaca konfigurasi database."
         continue
     fi
-echo "======================================================="
+    echo "======================================================="
     echo "   Daftar user yang ada di database ($DB_NAME):"
     QUERY="SELECT ID, user_login, user_email, user_registered FROM ${TABLE_PREFIX}users;"
     USERS=$(mysql -N -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" -P "${DB_PORT:-3306}" -D "$DB_NAME" -e "$QUERY" 2>/dev/null)
@@ -337,7 +335,6 @@ if [[ "$harden_confirm" =~ ^[Yy]$ ]]; then
             echo "   ✅ Konfigurasi ditambahkan."
         fi
 
-        # 5. Ubah permission wp-config.php
         read -p "   [5] Ubah permission wp-config.php ke 444? (y/n): " confirm
         if [[ "$confirm" =~ ^[Yy]$ ]]; then
             chmod 444 "$wp_path/wp-config.php"
