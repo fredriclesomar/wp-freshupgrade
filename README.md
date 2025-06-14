@@ -1,8 +1,4 @@
 # Fresh upgrade WordPress, build with Bahasa.
-The fresh upgrade process of WordPress will run automatically. Please ensure that you have created a backup as a precaution. By default, your media files will remain safe. 
-
-**We recommend running this script as the root user, especially if your cPanel account has limited CPU or RAM resources, or if it hosts multiple WordPress installations.
-
 This tool will assist you in updating all WordPress websites with a single click, and you only need to wait until the process is completed. Sent any bug to hi@fredriclesomar.my.id
 
 1. Grant execution permission to the shell script by running:
@@ -14,3 +10,5 @@ This tool will assist you in updating all WordPress websites with a single click
 bash: ./upgrade.sh: /bin/bash^M: bad interpreter: No such file or directory
 It likely means the file contains Windows-style line endings. You can fix it by running:
 > sed -i 's/\r//' upgrade.sh
+
+**We recommend running this script as the root user, especially if your cPanel account has limited CPU or RAM resources, or if it hosts multiple WordPress installations.
