@@ -1,14 +1,12 @@
 #!/bin/bash
 
-
 echo -e "\e[1;36m┌─────────────────────────────────────────────┐\e[0m"
 echo -e "\e[1;36m│      \e[1;33mWordPress Maintenance & Hardening\e[1;36m      │\e[0m"
 echo -e "\e[1;36m└─────────────────────────────────────────────┘\e[0m"
 echo -e "\e[1;32mAuthor :\e[0m Fredric Lesomar"
 echo -e "\e[1;32mEmail  :\e[0m hi@fredriclesomar.my.id"
-echo -e "\e[1;32mVersi  :\e[0m 2.4"
+echo -e "\e[1;32mVersi  :\e[0m 2.5"
 echo
-
 
 while getopts u: flag; do
     case "${flag}" in
@@ -25,10 +23,12 @@ fi
 BASE_DIR="/home/${USERCPANEL}/public_html"
 WP_URL="https://wordpress.org/latest.zip"
 TMP_DIR="/home/${USERCPANEL}/tmp_wp"
+PLUG_DIR="/home/${USERCPANEL}/WP_gagal_update"
 ZIP_FILE="$TMP_DIR/latest.zip"
 EXTRACT_DIR="$TMP_DIR/wordpress"
 
 mkdir -p "$TMP_DIR"
+mkdir -p "$PLUG_DIR"
 rm -rf "$TMP_DIR"/*
 
 echo "[1] Mendeteksi instalasi WordPress di $BASE_DIR..."
@@ -47,12 +47,13 @@ if [ ${#WP_PATHS[@]} -eq 0 ]; then
 fi
 
 echo "[2] Mengunduh WordPress versi terbaru..."
-wget -q -O "$ZIP_FILE" "$WP_URL"
+curl -# -L "$WP_URL" -o "$ZIP_FILE"
+
 if [ ! -f "$ZIP_FILE" ]; then
     echo "❌ Gagal mengunduh WordPress."
     exit 1
 fi
-
+echo
 echo "[3] Reset permission file dan folder..."
 for wp_path in "${WP_PATHS[@]}"; do
     echo "→ Reset permission di: $wp_path"
@@ -96,14 +97,13 @@ for wp_path in "${WP_PATHS[@]}"; do
     done
 done
 
-
+echo
 echo "[4] Mengekstrak WordPress..."
 unzip -q "$ZIP_FILE" -d "$TMP_DIR"
 if [ ! -d "$EXTRACT_DIR" ]; then
     echo "❌ Folder 'wordpress' tidak ditemukan setelah ekstrak."
     exit 1
 fi
-
 
 echo "[4.1] Memperbarui instalasi WordPress..."
 for wp_path in "${WP_PATHS[@]}"; do
@@ -133,7 +133,11 @@ for wp_path in "${WP_PATHS[@]}"; do
     echo "✔ WordPress diperbarui di: $wp_path"
 done
 
+echo
 echo "[5] Memperbarui plugin secara manual dari wordpress.org..."
+
+FAILED_PLUGINS_FILE="$PLUG_DIR/plugin_gagal_update.txt"
+> "$FAILED_PLUGINS_FILE"  # Kosongkan file jika sudah ada
 
 for wp_path in "${WP_PATHS[@]}"; do
     PLUGIN_DIR="$wp_path/wp-content/plugins"
@@ -152,6 +156,7 @@ for wp_path in "${WP_PATHS[@]}"; do
         if [ "$PLUGIN_PAGE_STATUS" != "200" ]; then
             echo "❌ Tidak ada plugin '$plugin_name' di situs resmi."
             echo "⚠️ Plugin '$plugin_name' belum diperbarui."
+            echo "$plugin_name" >> "$FAILED_PLUGINS_FILE"
             continue
         fi
 
@@ -162,6 +167,7 @@ for wp_path in "${WP_PATHS[@]}"; do
 
         if [ ! -f "$PLUGIN_ZIP_PATH" ]; then
             echo "⚠️ Gagal mengunduh plugin: $plugin_name"
+            echo "$plugin_name" >> "$FAILED_PLUGINS_FILE"
             continue
         fi
 
@@ -173,13 +179,26 @@ for wp_path in "${WP_PATHS[@]}"; do
             echo "✔ Plugin '$plugin_name' berhasil diperbarui."
         else
             echo "⚠️ Struktur plugin tidak valid: $plugin_name"
+            echo "$plugin_name" >> "$FAILED_PLUGINS_FILE"
         fi
 
         rm -f "$PLUGIN_ZIP_PATH"
     done
 done
+echo
+echo "======================================="
+if [ -s "$FAILED_PLUGINS_FILE" ]; then
+    echo "❌  List Plugin  yang gagal diperbarui : $FAILED_PLUGINS_FILE"
+echo "======================================="
+else
+    echo "✔ Semua plugin berhasil diperbarui."
+fi
+echo
 
 echo "[6] Memperbarui theme secara manual dari wordpress.org..."
+
+FAILED_THEMES_FILE="$PLUG_DIR/tema_gagal_update.txt"
+> "$FAILED_THEMES_FILE"  # Kosongkan file jika sudah ada
 
 for wp_path in "${WP_PATHS[@]}"; do
     THEME_DIR="$wp_path/wp-content/themes"
@@ -198,6 +217,7 @@ for wp_path in "${WP_PATHS[@]}"; do
         if [ "$THEME_PAGE_STATUS" != "200" ]; then
             echo "❌ Tidak ada theme '$theme_name' di situs resmi."
             echo "⚠️ Theme '$theme_name' belum diperbarui."
+            echo "$theme_name" >> "$FAILED_THEMES_FILE"
             continue
         fi
 
@@ -208,6 +228,7 @@ for wp_path in "${WP_PATHS[@]}"; do
 
         if [ ! -f "$THEME_ZIP_PATH" ]; then
             echo "⚠️ Gagal mengunduh theme: $theme_name"
+            echo "$theme_name" >> "$FAILED_THEMES_FILE"
             continue
         fi
 
@@ -219,14 +240,25 @@ for wp_path in "${WP_PATHS[@]}"; do
             echo "✔ Theme '$theme_name' berhasil diperbarui."
         else
             echo "⚠️ Struktur theme tidak valid: $theme_name"
+            echo "$theme_name" >> "$FAILED_THEMES_FILE"
         fi
 
         rm -f "$THEME_ZIP_PATH"
     done
 done
 
+echo
+echo "======================================="
+if [ -s "$FAILED_THEMES_FILE" ]; then
+    echo "❌  List Thheme yang gagal diperbarui : $FAILED_THEMES_FILE"
+echo "======================================="
+else
+    echo "✔ Semua theme berhasil diperbarui."
+fi
+
 rm -rf "$TMP_DIR"
 
+echo
 echo "[7] Menampilkan user terdaftar dan opsi reset password..."
 
 for WP_PATH in "${WP_PATHS[@]}"; do
@@ -250,6 +282,7 @@ for WP_PATH in "${WP_PATHS[@]}"; do
         echo "   ❌ Gagal membaca konfigurasi database."
         continue
     fi
+
     echo "======================================================="
     echo "   Daftar user yang ada di database ($DB_NAME):"
     QUERY="SELECT ID, user_login, user_email, user_registered FROM ${TABLE_PREFIX}users;"
@@ -262,42 +295,51 @@ for WP_PATH in "${WP_PATHS[@]}"; do
 
     echo "$USERS" | awk '{print NR". "$2" <"$3"> (Registered: "$4")"}'
 
-    echo -n "   Masukkan nomor user yang ingin direset passwordnya (atau ketik 0 untuk lewati): "
-    read -r USER_CHOICE
+    while true; do
+        echo -n "   Masukkan nomor user yang ingin direset passwordnya (0 untuk lewati user | q untuk keluar dari proses reset): "
+        read -r USER_CHOICE
 
-    if [[ ! "$USER_CHOICE" =~ ^[0-9]+$ ]] || [ "$USER_CHOICE" -lt 0 ] || [ "$USER_CHOICE" -gt "$(echo "$USERS" | wc -l)" ]; then
-        echo "   ❌ Pilihan tidak valid."
-        continue
-    fi
+        if [[ "$USER_CHOICE" == "q" || "$USER_CHOICE" == "Q" ]]; then
+            echo "   → Keluar dari reset password."
+            break
+        fi
 
-    if [ "$USER_CHOICE" -eq 0 ]; then
-        echo "   → Lewati reset password."
-        continue
-    fi
+        if [[ ! "$USER_CHOICE" =~ ^[0-9]+$ ]] || [ "$USER_CHOICE" -lt 0 ] || [ "$USER_CHOICE" -gt "$(echo "$USERS" | wc -l)" ]; then
+            echo "   ❌ Pilihan tidak valid."
+            continue
+        fi
 
+        if [ "$USER_CHOICE" -eq 0 ]; then
+            echo "   → Lewati user ini."
+            break
+        fi
 
-    SELECTED_USER_LOGIN=$(echo "$USERS" | sed -n "${USER_CHOICE}p" | awk '{print $2}')
-    SELECTED_USER_ID=$(echo "$USERS" | sed -n "${USER_CHOICE}p" | awk '{print $1}')
+        SELECTED_USER_LOGIN=$(echo "$USERS" | sed -n "${USER_CHOICE}p" | awk '{print $2}')
+        SELECTED_USER_ID=$(echo "$USERS" | sed -n "${USER_CHOICE}p" | awk '{print $1}')
 
-    NEW_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)
-    HASHED_PASS=$(php -r "
-        require_once('$WP_PATH/wp-load.php');
-        echo wp_hash_password('$NEW_PASS');
-    ")
+        NEW_PASS=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)
+        HASHED_PASS=$(php -r "
+            require_once('$WP_PATH/wp-load.php');
+            echo wp_hash_password('$NEW_PASS');
+        ")
 
-    if [ -z "$HASHED_PASS" ]; then
-        echo "   ❌ Gagal menghasilkan hash password."
-        continue
-    fi
+        if [ -z "$HASHED_PASS" ]; then
+            echo "   ❌ Gagal menghasilkan hash password."
+            continue
+        fi
 
-    SQL_UPDATE="UPDATE ${TABLE_PREFIX}users SET user_pass='$HASHED_PASS' WHERE ID=$SELECTED_USER_ID;"
-    mysql -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" -P "${DB_PORT:-3306}" -D "$DB_NAME" -e "$SQL_UPDATE"
+        SQL_UPDATE="UPDATE ${TABLE_PREFIX}users SET user_pass='$HASHED_PASS' WHERE ID=$SELECTED_USER_ID;"
+        mysql -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" -P "${DB_PORT:-3306}" -D "$DB_NAME" -e "$SQL_UPDATE"
 
-    echo "   ✔ Password user '$SELECTED_USER_LOGIN' berhasil direset menjadi: $NEW_PASS"
-    
+        echo "   ✔ Password user '$SELECTED_USER_LOGIN' berhasil direset menjadi: $NEW_PASS"
+        echo "-------------------------------------------------------"
+    done
+
     echo "======================================================="
 done
 
+echo
+echo
 echo "[8] Apakah ingin melanjutkan proses hardening WordPress?"
 read -p "   ❓ Lanjutkan proses hardening? (y/n): " harden_confirm
 
@@ -373,6 +415,6 @@ if [[ "$harden_confirm" =~ ^[Yy]$ ]]; then
 else
     echo "⏩ Melewati proses hardening WordPress."
 fi
-
+echo
 echo "✅ Selesai. Semua WordPress telah diperbarui."
 echo "⚠️ Silahkan periksa file malware/backdoor diluar struktur web dan segera hapus!"
