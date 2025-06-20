@@ -1,6 +1,8 @@
 # Fresh upgrade WordPress, build with Bahasa.
 This tool will assist you in updating all WordPress websites with a single click, and you only need to wait until the process is completed. Sent any bug to hi@fredriclesomar.my.id
 
+Note: $ ./upgrade.sh --help
+
 1. Grant execution permission to the shell script by running:
 > chmod +x upgrade.sh
 2. Execute the script using:
