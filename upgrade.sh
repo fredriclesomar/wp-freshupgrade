@@ -114,7 +114,7 @@ echo
 echo "[2️⃣ ] Mengunduh WordPress versi terbaru..."
 
 if ! curl -# -L "$WP_URL" -o "$ZIP_FILE"; then
-    echo "🛑 Gagal mengunduh WordPress. Periksa koneksi internet atau URL."
+    echo "🛑 Gagal mengunduh WordPress. Periksa koneksi internet atau firewall server."
     rm -f "$ZIP_FILE"  
     exit 1
 fi
