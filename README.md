@@ -3,6 +3,10 @@ This tool will assist you in updating all WordPress websites with a single click
 
 Note: $ ./upgrade.sh --help
 
+# Automated installation script:
+> $ bash <(curl -s https://raw.githubusercontent.com/fredriclesomar/wp-freshupgrade/refs/heads/master/upgrade.sh) -u usercPanel
+
+# Manualy installation script:
 1. Grant execution permission to the shell script by running:
 > chmod +x upgrade.sh
 2. Execute the script using:
@@ -13,4 +17,5 @@ bash: ./upgrade.sh: /bin/bash^M: bad interpreter: No such file or directory
 It likely means the file contains Windows-style line endings. You can fix it by running:
 > sed -i 's/\r//' upgrade.sh
 
-**We recommend running this script as the root user, especially if your cPanel account has limited CPU or RAM resources, or if it hosts multiple WordPress installations.
+**I recommend running this script as the root user, especially if your cPanel account has limited CPU or RAM resources, and if it hosts multiple WordPress installations.
+
