@@ -4,7 +4,9 @@ This tool will assist you in updating all WordPress websites with a single click
 Note: $ ./upgrade.sh --help
 
 # Automated installation script:
-> $ bash <(curl -s https://raw.githubusercontent.com/fredriclesomar/wp-freshupgrade/refs/heads/master/upgrade.sh) -u usercPanel
+```bash
+bash <(curl -s https://raw.githubusercontent.com/fredriclesomar/wp-freshupgrade/refs/heads/master/upgrade.sh) -u usercPanel
+```
 
 # Manualy installation script:
 1. Grant execution permission to the shell script by running:
