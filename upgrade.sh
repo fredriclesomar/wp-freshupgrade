@@ -13,7 +13,7 @@ echo -e "\e[1;36m│      \e[1;33mWordPress Maintenance & Hardening\e[1;36m     
 echo -e "\e[1;36m└─────────────────────────────────────────────┘\e[0m"
 echo -e "\e[1;32mAuthor :\e[0m Fredric Lesomar ✅"
 echo -e "\e[1;32mEmail  :\e[0m hi@fredriclesomar.my.id"
-echo -e "\e[1;32mVersi  :\e[0m 2.7"
+echo -e "\e[1;32mVersi  :\e[0m 2.8"
 echo
 
 if [[ "$1" == "--help" ]]; then
@@ -283,7 +283,7 @@ for wp_path in "${WP_PATHS[@]}"; do
 done
 if [ -s "$FAILED_PLUGINS_FILE" ]; then
     echo "======================================="
-    echo "😢  List Plugin yang gagal diperbarui : $FAILED_PLUGINS_FILE"
+    echo "😭  List Plugin yang gagal diperbarui : $FAILED_PLUGINS_FILE"
     echo "======================================="
 else
     echo "✅  Semua plugin berhasil diperbarui."
@@ -343,7 +343,7 @@ for wp_path in "${WP_PATHS[@]}"; do
 done
 if [ -s "$FAILED_THEMES_FILE" ]; then
     echo "======================================="
-    echo "😢  List Thheme yang gagal diperbarui : $FAILED_THEMES_FILE"
+    echo "😭  List Thheme yang gagal diperbarui : $FAILED_THEMES_FILE"
     echo "======================================="
 else
     echo "✅  Semua theme berhasil diperbarui."
@@ -450,11 +450,11 @@ done
 
 echo
 echo "[8️⃣ ] Apakah ingin melanjutkan proses hardening WordPress?"
-read -p "👮  Lanjutkan proses hardening? (y/n): " harden_confirm
+read -p "🕵️  Lanjutkan proses hardening? (y/n): " harden_confirm
 
 if [[ "$harden_confirm" =~ ^[Yy]$ ]]; then
     for wp_path in "${WP_PATHS[@]}"; do
-        echo "🔏  Memulai hardening untuk: $wp_path"
+        echo "🛡️  Memulai hardening untuk: $wp_path"
         upload_dir="$wp_path/wp-content/uploads"
         backup_dir="/home/${USERCPANEL}/uploads_backup"
         htaccess_file="$upload_dir/.htaccess"
@@ -494,7 +494,7 @@ if [[ "$harden_confirm" =~ ^[Yy]$ ]]; then
 
         read -p "   [6] Hapus plugin file manager jika ada? (y/n): " confirm
         if [[ "$confirm" =~ ^[Yy]$ ]]; then
-            rm -rf "$wp_path/wp-content/plugins/file-manager*"
+            rm -rf "$wp_path/wp-content/plugins/*file*manager*"
             echo "   ✅ Plugin file manager dihapus (jika ada)."
         fi
 
@@ -522,8 +522,8 @@ if [[ "$harden_confirm" =~ ^[Yy]$ ]]; then
         fi
     done
 else
-    echo "🔓  Melewati proses hardening, rentan terhadap isu keamanan WordPress Anda!"
+    echo "⛓️‍💥  Melewati proses hardening, rentan terhadap isu keamanan WordPress Anda!"
 fi
 echo
-echo "😀  Semua WordPress telah diperbarui."
+echo "🥳  Semua WordPress telah diperbarui."
 echo "🚨  Silahkan periksa file malware/backdoor diluar struktur web dan segera hapus!"
