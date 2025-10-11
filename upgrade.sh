@@ -1,5 +1,13 @@
 #!/bin/bash
 
+cleanup() {
+    echo "🔄 Membersihkan file temporary..."
+    [ -f "${ZIP_FILE:-}" ] && rm -f "$ZIP_FILE"
+    [ -d "${SESI_LOCK:-}" ] && rm -rf "$SESI_LOCK"
+    [ -d "${EXTRACT_DIR:-}" ] && rm -rf "$EXTRACT_DIR"
+    [ -n "${backup_dir:-}" ] && [ -d "$backup_dir" ] && rm -rf "$backup_dir"
+}
+
 trap cleanup EXIT TERM INT
 
 echo -e "\e[1;36m┌─────────────────────────────────────────────┐\e[0m"
@@ -713,14 +721,6 @@ if [ "$LAST_STEP" -lt 9 ]; then
 else
     echo "🔐 Lewati hardening — sudah tercatat di state."
 fi
-
-cleanup() {
-    echo "🔄 Membersihkan file temporary..."
-    [ -f "${ZIP_FILE:-}" ] && rm -f "$ZIP_FILE"
-    [ -d "${SESI_LOCK:-}" ] && rm -rf "$SESI_LOCK"
-    [ -d "${EXTRACT_DIR:-}" ] && rm -rf "$EXTRACT_DIR"
-    [ -n "${backup_dir:-}" ] && [ -d "$backup_dir" ] && rm -rf "$backup_dir"
-}
 
 echo
 echo "🥳  Semua WordPress telah diperbarui"
