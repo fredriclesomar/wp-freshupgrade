@@ -1,7 +1,7 @@
 {
   "status": "running",
-  "step": "hardening",
-  "progress": 86,
-  "message": "Menampilkan user WordPress. Menunggu input SSH bila diperlukan...",
-  "updated_at": "2026-06-20 09:44:09"
+  "step": "theme",
+  "progress": 78,
+  "message": "Memperbarui theme dari WordPress.org...",
+  "updated_at": "2026-06-20 09:57:34"
 }
