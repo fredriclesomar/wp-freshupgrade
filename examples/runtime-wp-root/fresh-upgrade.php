@@ -1,5 +1,4 @@
 <?php
-// WP_FRESHUPGRADE_UI_V3_4
 declare(strict_types=1);
 
 const FRESH_STATUS_NAME = 'fresh-upgrade-status.json';
@@ -10,7 +9,7 @@ function fresh_upgrade_default_status(string $source = 'default'): array {
         'status' => 'running',
         'step' => 'prepare',
         'progress' => 0,
-        'message' => 'Menunggu status backend upgrade.sh...',
+        'message' => 'Menunggu status backend upgrade.sh....',
         'updated_at' => date('Y-m-d H:i:s'),
         '_source' => $source,
     ];
@@ -139,7 +138,7 @@ function fresh_upgrade_debug_payload(array $status, array $dirs): array {
     }
 
     $status['_debug'] = [
-        'version' => '3.4',
+        'version' => '3.5',
         'source' => $status['_source'] ?? 'unknown',
         'script_filename' => (string)($_SERVER['SCRIPT_FILENAME'] ?? ''),
         'script_name' => (string)($_SERVER['SCRIPT_NAME'] ?? ''),
@@ -341,11 +340,11 @@ if (isset($_GET['fresh_status'])) {
         <div class="step" data-step="hardening"><span class="icon">🛡️</span><span>Hardening & keamanan</span></div>
       </div>
       <div id="debug" class="debug"></div>
-      <div class="footer">Upgrade otomatis oleh <b>Fredric Lesomar</b> — v3.4</div>
+      <div class="footer">Upgrade otomatis oleh <b>Fredric Lesomar</b> — v3.5</div>
     </section>
   </main>
   <script>
-    window.__WP_FRESHUPGRADE_UI_VERSION__ = '3.4';
+    window.__WP_FRESHUPGRADE_UI_VERSION__ = '3.5';
     window.FRESH_UPGRADE_INITIAL_STATUS = <?php echo json_encode($status, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
     const steps = ['download', 'core', 'plugin', 'theme', 'hardening'];
@@ -356,6 +355,8 @@ if (isset($_GET['fresh_status'])) {
     const desc = document.getElementById('description');
     const debug = document.getElementById('debug');
     let doneReloadScheduled = false;
+    let lastKnownDone = false;
+    const finishedRefreshMessage = 'Fresh Upgrade telah selesai, silahkan refresh web Anda.';
 
     function statusUrl() {
       const url = new URL(window.location.href);
@@ -403,8 +404,11 @@ if (isset($_GET['fresh_status'])) {
       if (debug) debug.textContent = data.updated_at ? 'Last update: ' + data.updated_at : '';
 
       if (data.status === 'done') {
+        lastKnownDone = true;
         title.innerHTML = 'Fresh Upgrade<br>Selesai';
-        desc.textContent = 'Pembaruan WordPress telah selesai. Website akan kembali normal otomatis.';
+        desc.textContent = 'Pembaruan WordPress telah selesai. Silahkan refresh web Anda.';
+        message.textContent = finishedRefreshMessage;
+        if (debug) debug.textContent = finishedRefreshMessage;
         if (!doneReloadScheduled) {
           doneReloadScheduled = true;
           setTimeout(() => window.location.reload(), 12000);
@@ -423,7 +427,21 @@ if (isset($_GET['fresh_status'])) {
         const data = await loadStatus();
         applyStatus(data);
       } catch (e) {
-        if (debug) debug.textContent = 'Status API error: ' + (e && e.message ? e.message : e);
+        const errorMessage = e && e.message ? e.message : String(e || '');
+
+        if (lastKnownDone || /JSON\.parse|unexpected character|Unexpected token|Payload status tidak valid/i.test(errorMessage)) {
+          lastKnownDone = true;
+          bar.style.width = '100%';
+          percent.textContent = '100%';
+          setStep('hardening', 'done');
+          title.innerHTML = 'Fresh Upgrade<br>Selesai';
+          desc.textContent = 'Pembaruan WordPress telah selesai. Silahkan refresh web Anda.';
+          message.textContent = finishedRefreshMessage;
+          if (debug) debug.textContent = finishedRefreshMessage;
+          return;
+        }
+
+        if (debug) debug.textContent = 'Status API error: ' + errorMessage;
         if (!window.FRESH_UPGRADE_INITIAL_STATUS) {
           message.textContent = 'Menunggu status backend upgrade.sh...';
         }
