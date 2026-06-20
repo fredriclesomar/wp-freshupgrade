@@ -1,7 +1,7 @@
 {
   "status": "running",
-  "step": "core",
-  "progress": 48,
-  "message": "Mengekstrak dan memasang core WordPress terbaru...",
-  "updated_at": "2026-06-19 00:00:00"
+  "step": "hardening",
+  "progress": 86,
+  "message": "Menampilkan user WordPress. Menunggu input SSH bila diperlukan...",
+  "updated_at": "2026-06-20 09:27:22"
 }

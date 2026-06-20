@@ -4,7 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
   <title>Fresh Upgrade Progress</title>
+  <!-- WP_FRESHUPGRADE_UI_V3_2 -->
   <style>
     :root {
       --bg: #090b17;
@@ -106,6 +108,7 @@
       animation: gradient 1.8s linear infinite;
     }
     .progress-meta { display: flex; justify-content: space-between; gap: 14px; margin-top: 12px; color: #8f91a8; font-size: 12px; }
+    #message { overflow-wrap: anywhere; }
     .steps { display: grid; gap: 10px; text-align: left; margin-top: 26px; }
     .step {
       display: flex;
@@ -149,10 +152,13 @@
         <div class="step" data-step="theme"><span class="icon">🎨</span><span>Memperbarui theme</span></div>
         <div class="step" data-step="hardening"><span class="icon">🛡️</span><span>Hardening & keamanan</span></div>
       </div>
-      <div class="footer">Upgrade otomatis oleh <b>Fredric Lesomar</b> — v3.1</div>
+      <div class="footer">Upgrade otomatis oleh <b>Fredric Lesomar</b> — v3.2</div>
     </section>
   </main>
   <script>
+    window.__WP_FRESHUPGRADE_UI_VERSION__ = '3.2';
+
+    const STATUS_FILE = 'fresh-upgrade-status.json';
     const steps = ['download', 'core', 'plugin', 'theme', 'hardening'];
     const bar = document.getElementById('bar');
     const percent = document.getElementById('percent');
@@ -160,6 +166,70 @@
     const title = document.getElementById('title');
     const desc = document.getElementById('description');
     let doneReloadScheduled = false;
+    let lastGoodStatusUrl = null;
+
+    function uniquePush(list, value) {
+      if (value && !list.includes(value)) list.push(value);
+    }
+
+    function statusCandidates() {
+      const stamp = 'ts=' + Date.now();
+      const path = window.location.pathname || '/';
+      const candidates = [];
+
+      if (lastGoodStatusUrl) uniquePush(candidates, lastGoodStatusUrl + '?' + stamp);
+
+      // Relative URL. Dengan .htaccess v3.2, request dari URL dalam/deep path tetap diarahkan ke file status di root WP.
+      uniquePush(candidates, STATUS_FILE + '?' + stamp);
+      uniquePush(candidates, './' + STATUS_FILE + '?' + stamp);
+
+      // Coba direktori URL saat ini, lalu naik bertahap sampai root domain.
+      let dir = path.endsWith('/') ? path : path.replace(/\/[^\/]*$/, '/');
+      if (!dir.startsWith('/')) dir = '/' + dir;
+      uniquePush(candidates, dir + STATUS_FILE + '?' + stamp);
+
+      const parts = dir.split('/').filter(Boolean);
+      for (let i = parts.length; i >= 0; i--) {
+        const prefix = '/' + parts.slice(0, i).join('/') + (i > 0 ? '/' : '');
+        uniquePush(candidates, prefix + STATUS_FILE + '?' + stamp);
+      }
+
+      return candidates;
+    }
+
+    async function loadStatus() {
+      const candidates = statusCandidates();
+      let lastError = null;
+
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url, {
+            cache: 'no-store',
+            headers: { 'Accept': 'application/json' }
+          });
+
+          if (!res.ok) {
+            lastError = new Error('HTTP ' + res.status + ' dari ' + url);
+            continue;
+          }
+
+          const text = await res.text();
+          const data = JSON.parse(text);
+
+          if (!data || typeof data !== 'object' || typeof data.progress === 'undefined') {
+            lastError = new Error('Payload status tidak valid dari ' + url);
+            continue;
+          }
+
+          lastGoodStatusUrl = url.split('?')[0];
+          return data;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      throw lastError || new Error('Status belum tersedia');
+    }
 
     function setStep(activeStep, status) {
       document.querySelectorAll('[data-step]').forEach(el => {
@@ -175,9 +245,7 @@
 
     async function refresh() {
       try {
-        const res = await fetch('fresh-upgrade-status.json?ts=' + Date.now(), { cache: 'no-store' });
-        if (!res.ok) throw new Error('Status belum tersedia');
-        const data = await res.json();
+        const data = await loadStatus();
         const progress = Math.max(0, Math.min(100, Number(data.progress || 0)));
         bar.style.width = progress + '%';
         percent.textContent = progress + '%';
@@ -199,6 +267,7 @@
         message.textContent = 'Menunggu status backend upgrade.sh...';
       }
     }
+
     refresh();
     setInterval(refresh, 1500);
   </script>
